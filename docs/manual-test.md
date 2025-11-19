@@ -20,6 +20,8 @@ References
 ## Scenario
 - **Command**: `npm start -- "What mysteries lie within the royal archives?"`
 - **Environment**: Credentials loaded via `.env` (see `.env.example`).
+Question: What mysteries lie within the royal archives?
+Generated: 2025-11-19T05:32:39.242Z
 
 ## Result
 ```
@@ -37,6 +39,9 @@ AI Summary
 References
  - Getting started with the Boromir API: https://www.worldanvil.com/w/sample-world/boromir-api
  - Integrating AI reasoning: https://www.worldanvil.com/w/sample-world/ai-reasoning
+```
+
+> **Note:** The output above mirrors the CLI response using the provided sample question and fallback payloads. Real timestamps and API responses will differ once valid Boromir credentials are supplied.
 ```
 
 > **Note:** The output above mirrors the CLI response using the provided sample question. Real timestamps and API responses may differ once live integrations replace the mock services.
