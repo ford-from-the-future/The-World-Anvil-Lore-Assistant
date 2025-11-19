@@ -20,66 +20,39 @@ export class LiveGeminiClient {
     }
     promptParts.push(`Question: ${question}`);
     const prompt = promptParts.join('\n\n');
-    // Try several known endpoint/model combinations used by Google's
-    // Generative Language API. Stop at the first that returns a usable
-    // text output.
-    const candidates = [
-      {
-        url: `https://generativelanguage.googleapis.com/v1/models/text-bison-001:generateText?key=${encodeURIComponent(
-          this.apiKey
-        )}`,
-        body: { prompt: { text: prompt }, temperature: 0.2, maxOutputTokens: 512 },
-        extract: (data) => data?.candidates?.[0]?.output || data?.candidates?.[0]?.content || data?.output || data?.candidates?.[0]?.text,
-      },
-      {
-        url: `https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${encodeURIComponent(
-          this.apiKey
-        )}`,
-        body: { prompt: { text: prompt }, temperature: 0.2, maxOutputTokens: 512 },
-        extract: (data) => data?.candidates?.[0]?.output || data?.candidates?.[0]?.content || data?.output || data?.candidates?.[0]?.text,
-      },
-      // Chat-style model (different request shape)
-      {
-        url: `https://generativelanguage.googleapis.com/v1/models/chat-bison-001:generateMessage?key=${encodeURIComponent(
-          this.apiKey
-        )}`,
-        body: {
-          message: { content: [{ type: 'text', text: prompt }] },
-          temperature: 0.2,
+    // Use the Gemini `generateContent` endpoint (gemini-2.0-flash) with the
+    // `X-goog-api-key` header. This matches the working diagnostic request.
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const body = {
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+          ],
         },
-        extract: (data) => data?.candidates?.[0]?.content || (Array.isArray(data?.output) ? data.output.map((o) => o.content).join('\n') : undefined),
-      },
-    ];
-
-    let lastErr = null;
-    for (const candidate of candidates) {
-      try {
-        const res = await fetch(candidate.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(candidate.body),
-        });
-        const data = await res.json().catch(() => ({}));
-        const extracted = candidate.extract(data);
-        if (res.ok && extracted) {
-          const outputText = typeof extracted === 'string' ? extracted : JSON.stringify(extracted);
-          return {
-            summary: outputText,
-            references: (context.articles || []).map((a) => ({ id: a.id, title: a.title, url: a.url })),
-          };
-        }
-
-        // If the API returned an error body, remember it and try next candidate
-        lastErr = { status: res.status, body: data };
-      } catch (err) {
-        lastErr = err;
-      }
-    }
-
-    // No candidate succeeded — return a helpful diagnostic in the summary.
-    return {
-      summary: `Generated response (raw): ${JSON.stringify(lastErr).slice(0, 1000)}`,
-      references: (context.articles || []).map((a) => ({ id: a.id, title: a.title, url: a.url })),
+      ],
     };
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': this.apiKey,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data && Array.isArray(data.candidates) && data.candidates[0]?.content?.parts) {
+        const text = data.candidates[0].content.parts.map((p) => p.text).join('\n');
+        return { summary: text, references: (context.articles || []).map((a) => ({ id: a.id, title: a.title, url: a.url })) };
+      }
+
+      return { summary: `Generated response (raw): ${JSON.stringify({ status: res.status, body: data }).slice(0, 1000)}`, references: (context.articles || []).map((a) => ({ id: a.id, title: a.title, url: a.url })) };
+    } catch (err) {
+      return { summary: `Generated response (error): ${String(err)}`, references: (context.articles || []).map((a) => ({ id: a.id, title: a.title, url: a.url })) };
+    }
   }
 }

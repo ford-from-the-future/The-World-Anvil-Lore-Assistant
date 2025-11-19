@@ -8,11 +8,16 @@ export class LiveBoromirClient {
   }
 
   get headers() {
-    return {
-      'X-Application-Key': this.applicationKey,
-      Authorization: this.authToken ? `Bearer ${this.authToken}` : undefined,
+    const headers = {
+      'Content-Type': 'application/json',
       Accept: 'application/json',
+      'User-Agent': 'WALA (https://github.com/ford-from-the-future/The-World-Anvil-Lore-Assistant, 0.1.0)',
     };
+
+    if (this.applicationKey) headers['x-application-key'] = this.applicationKey;
+    if (this.authToken) headers['x-auth-token'] = this.authToken;
+
+    return headers;
   }
 
   async tryFetchJson(url) {
@@ -30,13 +35,35 @@ export class LiveBoromirClient {
       throw new Error('WALA_WORLD_ID is required for live Boromir requests');
     }
 
-    // Try a few plausible Boromir/world-anvil endpoints. If they all fail,
-    // surface the last error so the caller can see what happened.
+    // Use the documented Boromir base path. Try a few granularity settings.
+    const base = 'https://www.worldanvil.com/api/external/boromir';
+    const qp = (u) => {
+      const ak = encodeURIComponent(this.applicationKey || '');
+      const at = encodeURIComponent(this.authToken || '');
+      if (ak && at) return `${u}${u.includes('?') ? '&' : '?'}x-application-key=${ak}&x-auth-token=${at}`;
+      return u;
+    };
+
     const candidates = [
-      `https://api.worldanvil.com/boromir/v1/worlds/${this.worldId}`,
-      `https://api.worldanvil.com/worlds/${this.worldId}`,
-      `https://www.worldanvil.com/api/worlds/${this.worldId}`,
-      `https://www.worldanvil.com/boromir/worlds/${this.worldId}`,
+      // Try the documented singular 'world' query endpoint first (returns JSON)
+      `${base}/world?id=${this.worldId}&granularity=2`,
+      `${base}/world?id=${this.worldId}&granularity=1`,
+      `${base}/world?id=${this.worldId}`,
+      qp(`${base}/world?id=${this.worldId}&granularity=2`),
+      qp(`${base}/world?id=${this.worldId}&granularity=1`),
+      qp(`${base}/world?id=${this.worldId}`),
+
+      // Preferred header-based requests with plural 'worlds' path (older/alternate)
+      `${base}/worlds/${this.worldId}?granularity=2`,
+      `${base}/worlds/${this.worldId}?granularity=1`,
+      `${base}/worlds/${this.worldId}`,
+      // Try the same endpoints but with tokens as query params (CORS/auth fallback)
+      qp(`${base}/worlds/${this.worldId}?granularity=2`),
+      qp(`${base}/worlds/${this.worldId}?granularity=1`),
+      qp(`${base}/worlds/${this.worldId}`),
+
+      // legacy fallback
+      qp(`https://api.worldanvil.com/boromir/v1/worlds/${this.worldId}`),
     ];
 
     let lastResult = null;
@@ -59,19 +86,11 @@ export class LiveBoromirClient {
           };
         }
 
-        // If the endpoint returned a non-JSON success payload (e.g. an HTML page
-        // such as a Cloudflare challenge), gracefully fall back to a limited
-        // metadata response instead of throwing. This lets the assistant run
-        // the rest of its flow even when the remote site blocks automated
-        // requests.
-        if (result.ok && !result.json && typeof result.text === 'string') {
-          return {
-            worldId: this.worldId,
-            title: `World ${this.worldId} (unavailable - remote returned non-JSON)` ,
-            description: 'Remote Boromir endpoint returned non-JSON content (possibly Cloudflare). Using limited fallback metadata.',
-            tags: [],
-          };
-        }
+        // If the endpoint returned a non-JSON success payload (e.g. an HTML
+        // page such as a Cloudflare challenge), do NOT return early here. We
+        // want to continue trying other candidate endpoints (some hosts expose
+        // the same resource at different paths). We'll record the lastResult
+        // and handle fallbacks after all candidates have been attempted.
 
         // If the response contained an HTML page (Cloudflare or similar),
         // treat that as a known blocking condition and return a limited
@@ -111,10 +130,24 @@ export class LiveBoromirClient {
 
     // Try a plausible search endpoint. Fallback to the world articles listing.
     const encoded = encodeURIComponent(query);
+    const base = 'https://www.worldanvil.com/api/external/boromir';
+    const qp = (u) => {
+      const ak = encodeURIComponent(this.applicationKey || '');
+      const at = encodeURIComponent(this.authToken || '');
+      if (ak && at) return `${u}${u.includes('?') ? '&' : '?'}x-application-key=${ak}&x-auth-token=${at}`;
+      return u;
+    };
+
     const candidates = [
-      `https://api.worldanvil.com/boromir/v1/worlds/${this.worldId}/search?query=${encoded}`,
-      `https://api.worldanvil.com/worlds/${this.worldId}/articles?search=${encoded}`,
-      `https://www.worldanvil.com/api/worlds/${this.worldId}/articles?search=${encoded}`,
+      // Try search/article endpoints with and without query-param auth
+      `${base}/worlds/${this.worldId}/search?query=${encoded}&granularity=1`,
+      `${base}/worlds/${this.worldId}/articles?search=${encoded}&granularity=1`,
+      `${base}/worlds/${this.worldId}/articles?granularity=1`,
+      qp(`${base}/worlds/${this.worldId}/search?query=${encoded}&granularity=1`),
+      qp(`${base}/worlds/${this.worldId}/articles?search=${encoded}&granularity=1`),
+      qp(`${base}/worlds/${this.worldId}/articles?granularity=1`),
+      // legacy fallback
+      qp(`https://api.worldanvil.com/boromir/v1/worlds/${this.worldId}/search?query=${encoded}`),
     ];
 
     for (const url of candidates) {
