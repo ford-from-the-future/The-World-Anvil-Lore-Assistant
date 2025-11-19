@@ -45,6 +45,8 @@ export const config = {
   applicationKey: process.env.WALA_APPLICATION_KEY || '',
   authToken: process.env.WALA_AUTH_TOKEN || '',
   worldId: process.env.WALA_WORLD_ID || '',
+  worldUrl: process.env.WALA_WORLD_URL || '',
+  rssUrl: process.env.WALA_RSS_URL || '',
   geminiApiKey: process.env.GOOGLE_GEMINI_API_KEY || '',
 };
 

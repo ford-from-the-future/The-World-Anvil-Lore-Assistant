@@ -24,6 +24,7 @@ if (process.env.WALA_LIVE === 'true') {
 export class LoreAssistant {
   constructor(appConfig) {
     this.config = appConfig;
+    this.articleCache = new Map();
 
     if (process.env.WALA_LIVE === 'true' && LiveBoromirClient) {
       this.boromirClient = new LiveBoromirClient(appConfig);
@@ -48,7 +49,32 @@ export class LoreAssistant {
       this.boromirClient.searchArticles(question),
     ]);
 
-    const aiResponse = await this.geminiClient.generateResponse(question, { world, articles });
+    // If the Boromir client can fetch full articles, retrieve the top N
+    // article bodies to provide real lore context to the model.
+    let enrichedArticles = articles;
+    const canFetchArticle = typeof this.boromirClient.fetchArticle === 'function';
+    if (canFetchArticle && Array.isArray(articles) && articles.length) {
+      const top = articles.slice(0, 5);
+      const fetches = top.map(async (a) => {
+        if (!a || !a.id) return a;
+        if (this.articleCache.has(a.id)) return this.articleCache.get(a.id);
+        try {
+          const full = await this.boromirClient.fetchArticle(a.id, 2);
+          const merged = Object.assign({}, a, { full });
+          this.articleCache.set(a.id, merged);
+          return merged;
+        } catch (e) {
+          return a;
+        }
+      });
+
+      const resolved = await Promise.all(fetches);
+      // Merge resolved top articles back into the original list (replace by id)
+      const byId = Object.fromEntries(resolved.filter(Boolean).map((r) => [r.id || r._id || r.slug || r.url, r]));
+      enrichedArticles = articles.map((a) => byId[a.id] || a);
+    }
+
+    const aiResponse = await this.geminiClient.generateResponse(question, { world, articles: enrichedArticles });
 
     return {
       question,
