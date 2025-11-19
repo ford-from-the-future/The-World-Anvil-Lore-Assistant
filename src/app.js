@@ -39,15 +39,32 @@ export class LoreAssistant {
     }
   }
 
-  async answerQuestion(question) {
+  async answerQuestion(question, { articleId = null } = {}) {
     if (!question || !question.trim()) {
       throw new Error('A question is required.');
     }
 
-    const [world, articles] = await Promise.all([
-      this.boromirClient.fetchWorldMetadata(),
-      this.boromirClient.searchArticles(question),
-    ]);
+    const worldPromise = this.boromirClient.fetchWorldMetadata();
+    let articles = [];
+
+    if (articleId && typeof this.boromirClient.fetchArticle === 'function') {
+      const cached = this.articleCache.get(articleId);
+      const article = cached || (await this.boromirClient.fetchArticle(articleId, 2));
+      if (article) {
+        const normalized = {
+          id: article.id || articleId,
+          title: article.title || 'Selected article',
+          url: article.url || article.link || '',
+          full: article,
+        };
+        this.articleCache.set(articleId, normalized);
+        articles = [normalized];
+      }
+    } else {
+      articles = await this.boromirClient.searchArticles(question);
+    }
+
+    const world = await worldPromise;
 
     // If the Boromir client can fetch full articles, retrieve the top N
     // article bodies to provide real lore context to the model.

@@ -1,0 +1,99 @@
+#wala-widget {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+  z-index: 2147483647;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+#wala-widget .wala-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, #1e293b, #0f172a);
+}
+
+#wala-widget .wala-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#wala-widget .wala-row label {
+  display: block;
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+#wala-widget input,
+#wala-widget textarea,
+#wala-widget button {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+#wala-widget textarea {
+  resize: vertical;
+}
+
+#wala-widget button {
+  cursor: pointer;
+  background: #2563eb;
+  border-color: #2563eb;
+  font-weight: 600;
+}
+
+#wala-widget button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+#wala-widget .wala-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#wala-widget .wala-status {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+#wala-widget .wala-response {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#wala-widget .wala-section {
+  margin-bottom: 10px;
+}
+
+#wala-widget .wala-label {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+#wala-widget ul {
+  padding-left: 18px;
+}
+
+#wala-widget a {
+  color: #93c5fd;
+}

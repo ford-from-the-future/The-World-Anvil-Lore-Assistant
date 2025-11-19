@@ -49,6 +49,49 @@ Set these to enable live features (or use `.env`):
 - `WALA_WORLD_URL` — Public world URL base (used by crawlers)
 - `WALA_RSS_URL` — RSS feed URL for the world (optional)
 - `GOOGLE_GEMINI_API_KEY` — Gemini API key
+- `WALA_WIDGET_API_BASE` — Mount path for the widget API bridge (default `/api/wala`)
+- `WALA_WIDGET_ALLOWED_ORIGIN` — Optional origin value for CORS when embedding the widget cross-site
+
+### Sidebar widget (Vite bundle)
+
+The `widget/` directory ships a lightweight Vite build that renders a sidebar for asking the assistant about the current article. It auto-detects the article ID from query params (`?walaArticleId=...`), `data-article-id` attributes, or `<meta name="wala-article-id">` content. Authentication is user-supplied at runtime—no tokens are compiled into the bundle.
+
+**Build the widget**
+
+```bash
+npm run widget:build
+# outputs widget/dist/wala-widget.js and CSS assets
+```
+
+**Run the bridge server locally**
+
+```bash
+cp .env.example .env
+export WALA_LIVE=true
+npm install
+npm run serve
+# server listens on http://localhost:8788 and mounts the API at WALA_WIDGET_API_BASE
+```
+
+**Embed snippet**
+
+Serve the contents of `widget/dist/` from your site (or proxy `/widget` from the provided server) and include:
+
+```html
+<script>
+  window.WALA_WIDGET_CONFIG = {
+    apiBase: '/api/wala', // or your deployed bridge URL
+    articleId: null // optional override if your CMS exposes the id elsewhere
+  };
+</script>
+<link rel="stylesheet" href="/widget/wala-widget-style.css" />
+<script type="module" src="/widget/wala-widget.js"></script>
+```
+
+**API contract**
+
+- `GET {WALA_WIDGET_API_BASE}/public-config` → returns `{ ok, config }` with non-secret world metadata and widget base path.
+- `POST {WALA_WIDGET_API_BASE}/ask` → body `{ prompt, articleId? }`; headers may include `X-Wala-Auth-Token` (and optionally `X-Wala-Application-Key`) to supply per-user tokens. The bridge proxies to Boromir/Gemini and skips search when `articleId` is present.
 
 **Common commands (PowerShell)**
 

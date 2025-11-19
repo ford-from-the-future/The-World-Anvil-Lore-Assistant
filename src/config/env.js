@@ -41,21 +41,38 @@ for (const [key, value] of Object.entries(envFromFile)) {
   }
 }
 
-export const config = {
+const serverConfig = {
   applicationKey: process.env.WALA_APPLICATION_KEY || '',
   authToken: process.env.WALA_AUTH_TOKEN || '',
   worldId: process.env.WALA_WORLD_ID || '',
   worldUrl: process.env.WALA_WORLD_URL || '',
   rssUrl: process.env.WALA_RSS_URL || '',
   geminiApiKey: process.env.GOOGLE_GEMINI_API_KEY || '',
+  widgetApiBase: process.env.WALA_WIDGET_API_BASE || '/api/wala',
+  widgetAllowedOrigin: process.env.WALA_WIDGET_ALLOWED_ORIGIN || '',
 };
+
+export const publicConfig = {
+  worldId: serverConfig.worldId,
+  worldUrl: serverConfig.worldUrl,
+  widgetApiBase: serverConfig.widgetApiBase,
+};
+
+export function buildServerConfig(overrides = {}) {
+  return {
+    ...serverConfig,
+    ...overrides,
+  };
+}
+
+export const config = buildServerConfig();
 
 export function validateConfig() {
   const missing = Object.entries({
-    WALA_APPLICATION_KEY: config.applicationKey,
-    WALA_AUTH_TOKEN: config.authToken,
-    WALA_WORLD_ID: config.worldId,
-    GOOGLE_GEMINI_API_KEY: config.geminiApiKey,
+    WALA_APPLICATION_KEY: serverConfig.applicationKey,
+    WALA_AUTH_TOKEN: serverConfig.authToken,
+    WALA_WORLD_ID: serverConfig.worldId,
+    GOOGLE_GEMINI_API_KEY: serverConfig.geminiApiKey,
   })
     .filter(([, value]) => !value)
     .map(([key]) => key);

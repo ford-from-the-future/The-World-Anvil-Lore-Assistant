@@ -6,10 +6,13 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "serve": "node src/server/index.js",
     "dev": "node --watch src/index.js",
     "lint": "node scripts/lint.js",
     "backup": "node scripts/backup.js",
-    "extract": "node scripts/extract.js"
+    "extract": "node scripts/extract.js",
+    "widget:dev": "npm --prefix widget run dev",
+    "widget:build": "npm --prefix widget run build"
   },
   "keywords": [
     "world-anvil",
@@ -17,5 +20,8 @@
     "assistant"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
