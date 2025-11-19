@@ -1,66 +1,69 @@
-World Anvil Lore Assistant (WALA)
+# World Anvil Lore Assistant (WALA)
 
 World Anvil Lore Assistant (WALA) is a local AI-powered tool that connects directly to a user’s World Anvil world via the Boromir API, enabling natural-language querying, cross-article discovery, and structured lore exploration. It integrates with Google Gemini for reasoning and generation, while storing user credentials securely on the local machine.
 
 WALA functions as an intelligent retrieval-and-synthesis layer on top of World Anvil, returning AI-generated insights accompanied by direct links to the original articles referenced.
 
-Features
-Boromir API Integration
+## Project structure
 
-WALA connects to the user’s World Anvil world using three user-provided configuration values:
+```
+├── .env.example          # Template for the required credentials
+├── package.json          # Node.js project manifest (pure ESM)
+├── scripts/lint.js       # Lightweight syntax checker (node --check)
+└── src
+    ├── app.js            # LoreAssistant orchestration class
+    ├── config/env.js     # Environment loading and validation helpers
+    ├── services/         # Boromir + Gemini client stubs
+    ├── types/            # Shared typedefs/JSDoc models
+    └── index.js          # CLI entry point
+```
 
-Application Key (client ID)
+The Boromir client still returns deterministic sample data so the CLI can operate without the live World Anvil API, but the Gemini integration now calls Google’s hosted API for real text generation.
 
-Auth Token (Bearer token)
+## Getting started
 
-World ID
+1. **Install Node.js 18+**
+2. **Clone the repository** and copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+3. **Populate the credentials** inside `.env` once you have:
+   - `WALA_APPLICATION_KEY`
+   - `WALA_AUTH_TOKEN`
+   - `WALA_WORLD_ID`
+   - `GOOGLE_GEMINI_API_KEY`
+4. **Run the CLI**:
+   ```bash
+   npm start -- "What secrets lie in the capital city?"
+   ```
+   or simply `npm start` and follow the interactive prompt.
 
-These values are stored securely and locally. With valid credentials, WALA can:
+## Gemini integration
 
-Fetch articles, categories, timelines, metadata
+- The CLI sends prompts to [Google Gemini](https://ai.google.dev/) via the public REST API endpoint
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`.
+- Set `GOOGLE_GEMINI_API_KEY` inside your `.env` file to authorize requests. The CLI will abort with a helpful error message if
+  the key is missing.
+- If you prefer a different Gemini model, adjust the `DEFAULT_MODEL` constant in `src/services/geminiClient.js`.
+- World/Article metadata retrieved from Boromir is embedded directly in the prompt so Gemini can ground its response in the
+  supplied context. Article titles are surfaced back to the CLI as references.
 
-Retrieve article content, excerpts, tags, and relationships
+## Available scripts
 
-Resolve category and hierarchical navigation within the world
+| Command        | Description |
+| -------------- | ----------- |
+| `npm start`    | Executes the CLI entry (`src/index.js`). |
+| `npm run dev`  | Runs the CLI in watch mode using Node’s built-in `--watch`. |
+| `npm run lint` | Uses `node --check` on every `.js` file for fast syntax validation. |
 
-AI-Augmented Lore Querying (Google Gemini)
+## Manual verification
 
-Using Google Gemini, WALA:
+A snapshot of the latest CLI run (with the sample question "What mysteries lie within the royal archives?") is recorded in
+[`docs/manual-test.md`](docs/manual-test.md). Use it as a reference when confirming local behavior or comparing future output
+once the real APIs are wired in.
 
-Accepts natural-language questions
+## Next steps
 
-Identifies relevant World Anvil articles
-
-Synthesizes readable answers grounded in actual world content
-
-Returns results with inline links to the articles referenced
-
-Local-First Architecture
-
-No cloud storage
-
-No third-party server processing of credentials or content
-
-Optional local caching of articles for faster repeated queries
-
-All AI reasoning uses locally retrieved/processed data
-
-Cross-Linked Responses
-
-Every answer includes:
-
-An AI-generated explanation
-
-Direct links back to the underlying World Anvil articles
-
-Optional expanded metadata or excerpts (configurable)
-
-Requirements
-
-Node.js (version 18+ recommended)
-
-npm or yarn
-
-A World Anvil account with API application access
-
-A Google Gemini API key
+- Replace the mock Boromir client with real HTTP requests and API calls.
+- Introduce persistent caching for article payloads.
+- Expand the CLI into an API or desktop UI once the retrieval layer is stable.
