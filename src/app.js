@@ -5,7 +5,7 @@ export class LoreAssistant {
   constructor(appConfig) {
     this.config = appConfig;
     this.boromirClient = new BoromirClient(appConfig);
-    this.geminiClient = new GeminiClient({ apiKey: appConfig.geminiApiKey });
+    this.geminiClient = new GeminiClient(appConfig.geminiApiKey);
   }
 
   async answerQuestion(question) {

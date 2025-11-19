@@ -13,12 +13,12 @@ WALA functions as an intelligent retrieval-and-synthesis layer on top of World A
 └── src
     ├── app.js            # LoreAssistant orchestration class
     ├── config/env.js     # Environment loading and validation helpers
-    ├── services/         # Boromir + Gemini API clients
+    ├── services/         # Boromir + Gemini client stubs
     ├── types/            # Shared typedefs/JSDoc models
     └── index.js          # CLI entry point
 ```
 
-Both the Boromir and Gemini clients now talk directly to their hosted APIs. When Boromir credentials are missing (or the World Anvil API is temporarily unavailable) the CLI gracefully falls back to deterministic sample data so local testing continues to work.
+The current implementation is intentionally mock-driven so that the surrounding developer experience (CLI flows, configuration, validation, etc.) can be built before wiring up live APIs.
 
 ## Getting started
 
@@ -38,25 +38,6 @@ Both the Boromir and Gemini clients now talk directly to their hosted APIs. When
    ```
    or simply `npm start` and follow the interactive prompt.
 
-## Boromir integration
-
-- Requests are issued to `https://www.worldanvil.com/api/external/ai/boromir`, authenticated with the `X-Application-Key` and `Authorization: Bearer <token>` headers. The world ID is sent both as `X-World-Id` and inside the request path (e.g., `/worlds/<WORLD_ID>`).
-- The client retrieves:
-  - **World metadata:** `GET /worlds/<WORLD_ID>`
-  - **Article search results:** `GET /worlds/<WORLD_ID>/articles/search?query=<QUESTION>&limit=5`
-- Both requests time out after ~12 seconds. When timeouts or other HTTP failures occur the CLI logs a warning (`[boromir] ...`) and reuses the local mock payloads so the experience never hard-crashes mid-session.
-- Populate `WALA_APPLICATION_KEY`, `WALA_AUTH_TOKEN`, and `WALA_WORLD_ID` inside `.env` to enable live retrievals.
-
-## Gemini integration
-
-- The CLI sends prompts to [Google Gemini](https://ai.google.dev/) via the public REST API endpoint
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`.
-- Set `GOOGLE_GEMINI_API_KEY` inside your `.env` file to authorize requests. The CLI will abort with a helpful error message if
-  the key is missing.
-- If you prefer a different Gemini model, adjust the `DEFAULT_MODEL` constant in `src/services/geminiClient.js`.
-- World/Article metadata retrieved from Boromir is embedded directly in the prompt so Gemini can ground its response in the
-  supplied context. Article titles are surfaced back to the CLI as references.
-
 ## Available scripts
 
 | Command        | Description |
@@ -65,14 +46,8 @@ Both the Boromir and Gemini clients now talk directly to their hosted APIs. When
 | `npm run dev`  | Runs the CLI in watch mode using Node’s built-in `--watch`. |
 | `npm run lint` | Uses `node --check` on every `.js` file for fast syntax validation. |
 
-## Manual verification
-
-A snapshot of the latest CLI run (with the sample question "What mysteries lie within the royal archives?") is recorded in
-[`docs/manual-test.md`](docs/manual-test.md). The captured output reflects the fallback payloads; real API responses will vary
-once your credentials are configured.
-
 ## Next steps
 
-- Replace the mock Boromir client with real HTTP requests and API calls.
+- Replace the mock Boromir/Gemini clients with real HTTP requests and API calls.
 - Introduce persistent caching for article payloads.
 - Expand the CLI into an API or desktop UI once the retrieval layer is stable.
