@@ -18,7 +18,7 @@ WALA functions as an intelligent retrieval-and-synthesis layer on top of World A
     └── index.js          # CLI entry point
 ```
 
-The Boromir client still returns deterministic sample data so the CLI can operate without the live World Anvil API, but the Gemini integration now calls Google’s hosted API for real text generation.
+The current implementation is intentionally mock-driven so that the surrounding developer experience (CLI flows, configuration, validation, etc.) can be built before wiring up live APIs.
 
 ## Getting started
 
@@ -38,16 +38,6 @@ The Boromir client still returns deterministic sample data so the CLI can operat
    ```
    or simply `npm start` and follow the interactive prompt.
 
-## Gemini integration
-
-- The CLI sends prompts to [Google Gemini](https://ai.google.dev/) via the public REST API endpoint
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`.
-- Set `GOOGLE_GEMINI_API_KEY` inside your `.env` file to authorize requests. The CLI will abort with a helpful error message if
-  the key is missing.
-- If you prefer a different Gemini model, adjust the `DEFAULT_MODEL` constant in `src/services/geminiClient.js`.
-- World/Article metadata retrieved from Boromir is embedded directly in the prompt so Gemini can ground its response in the
-  supplied context. Article titles are surfaced back to the CLI as references.
-
 ## Available scripts
 
 | Command        | Description |
@@ -56,14 +46,8 @@ The Boromir client still returns deterministic sample data so the CLI can operat
 | `npm run dev`  | Runs the CLI in watch mode using Node’s built-in `--watch`. |
 | `npm run lint` | Uses `node --check` on every `.js` file for fast syntax validation. |
 
-## Manual verification
-
-A snapshot of the latest CLI run (with the sample question "What mysteries lie within the royal archives?") is recorded in
-[`docs/manual-test.md`](docs/manual-test.md). Use it as a reference when confirming local behavior or comparing future output
-once the real APIs are wired in.
-
 ## Next steps
 
-- Replace the mock Boromir client with real HTTP requests and API calls.
+- Replace the mock Boromir/Gemini clients with real HTTP requests and API calls.
 - Introduce persistent caching for article payloads.
 - Expand the CLI into an API or desktop UI once the retrieval layer is stable.
