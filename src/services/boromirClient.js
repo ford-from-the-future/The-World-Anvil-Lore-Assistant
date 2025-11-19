@@ -57,4 +57,25 @@ export class BoromirClient {
       },
     ];
   }
+
+  /**
+   * Fetch a single article by id. In the mock client we return a predictable
+   * payload so downstream code can exercise the pre-known article path.
+   * @param {string} id
+   * @param {number|string} granularity
+   */
+  async fetchArticle(id, granularity = 1) {
+    if (!id) return null;
+
+    return {
+      id,
+      title: `Sample article ${id}`,
+      url: `https://www.worldanvil.com/w/sample-world/${id}`,
+      slug: id,
+      granularity,
+      contentParsed: `Stub content for article ${id}.`,
+      contentRaw: `Stub content for article ${id}.`,
+      tags: ['sample', 'mock'],
+    };
+  }
 }
