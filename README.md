@@ -4,50 +4,92 @@ World Anvil Lore Assistant (WALA) is a local AI-powered tool that connects direc
 
 WALA functions as an intelligent retrieval-and-synthesis layer on top of World Anvil, returning AI-generated insights accompanied by direct links to the original articles referenced.
 
-## Project structure
+# World Anvil Lore Assistant (WALA)
+
+World Anvil Lore Assistant (WALA) is a local AI-powered tool that connects to a user’s World Anvil world via the Boromir API and synthesizes answers using Google Gemini. It is intended to provide authoritative, citation-backed responses by retrieving actual article JSON from your World Anvil world and feeding those documents to an LLM for reasoning.
+
+**Current State (2025-11-19)**
+
+- **Live clients implemented**: `src/services/liveBoromirClient.js` and `src/services/liveGeminiClient.js` are wired to make real requests when `WALA_LIVE=true`.
+- **Article-by-ID works**: `LiveBoromirClient.fetchArticle(id, granularity)` returns full article JSON for known IDs (verified for `71934432-3315-4b70-bb64-93d7efe2413d`).
+- **Diagnostics & tooling**: Added multiple diagnostic and utility scripts under `scripts/` for identity/world checks, article fetching, RSS backups and conservative HTML ToC crawling.
+- **Caveats**: Bulk discovery (HTML ToC crawling) is often blocked by Cloudflare from this environment (HTTP 403). RSS feeds may be empty depending on world settings. A local full-text index is not yet present — recommended next step.
+
+**Project structure**
 
 ```
-├── .env.example          # Template for the required credentials
-├── package.json          # Node.js project manifest (pure ESM)
-├── scripts/lint.js       # Lightweight syntax checker (node --check)
-└── src
-    ├── app.js            # LoreAssistant orchestration class
-    ├── config/env.js     # Environment loading and validation helpers
-    ├── services/         # Boromir + Gemini client stubs
-    ├── types/            # Shared typedefs/JSDoc models
-    └── index.js          # CLI entry point
+├── .env.example          # Template for required environment variables
+├── package.json
+├── README.md
+├── scripts/              # Diagnostics, backup, crawler, and helpers
+├── src/
+│   ├── app.js            # Orchestration / pipeline
+│   ├── config/env.js     # Env loader
+│   └── services/         # Live Boromir & Gemini clients
+└── data/                 # Backup output and extracted text
+    ├── articles/
+    └── extract/
 ```
 
-The current implementation is intentionally mock-driven so that the surrounding developer experience (CLI flows, configuration, validation, etc.) can be built before wiring up live APIs.
+**Key files**
 
-## Getting started
+- `src/services/liveBoromirClient.js` — Boromir API client (header + query-param auth, fetchArticle, paginated listing fallback)
+- `src/services/liveGeminiClient.js` — Gemini call wrapper with retry/backoff
+- `src/app.js` — Orchestrates search → fetch top articles → enrich → Gemini
+- `scripts/` — `diag_*` diagnostics, `crawl_rss_and_fetch.js`, `backup.js`, `extract.js`, `crawl_toc_and_fetch.js`
 
-1. **Install Node.js 18+**
-2. **Clone the repository** and copy the environment template:
-   ```bash
-   cp .env.example .env
-   ```
-3. **Populate the credentials** inside `.env` once you have:
-   - `WALA_APPLICATION_KEY`
-   - `WALA_AUTH_TOKEN`
-   - `WALA_WORLD_ID`
-   - `GOOGLE_GEMINI_API_KEY`
-4. **Run the CLI**:
-   ```bash
-   npm start -- "What secrets lie in the capital city?"
-   ```
-   or simply `npm start` and follow the interactive prompt.
+**Environment variables (.env)**
 
-## Available scripts
+Set these to enable live features (or use `.env`):
 
-| Command        | Description |
-| -------------- | ----------- |
-| `npm start`    | Executes the CLI entry (`src/index.js`). |
-| `npm run dev`  | Runs the CLI in watch mode using Node’s built-in `--watch`. |
-| `npm run lint` | Uses `node --check` on every `.js` file for fast syntax validation. |
+- `WALA_LIVE` — `true` to enable live network clients
+- `WALA_APPLICATION_KEY` — World Anvil application key (header auth)
+- `WALA_AUTH_TOKEN` — World Anvil auth token (if required)
+- `WALA_WORLD_ID` — World UUID
+- `WALA_WORLD_URL` — Public world URL base (used by crawlers)
+- `WALA_RSS_URL` — RSS feed URL for the world (optional)
+- `GOOGLE_GEMINI_API_KEY` — Gemini API key
 
-## Next steps
+**Common commands (PowerShell)**
 
-- Replace the mock Boromir/Gemini clients with real HTTP requests and API calls.
-- Introduce persistent caching for article payloads.
-- Expand the CLI into an API or desktop UI once the retrieval layer is stable.
+Fetch a single article by ID (live):
+
+```powershell
+$env:WALA_LIVE='true';
+node scripts/diag_fetch_article.js "71934432-3315-4b70-bb64-93d7efe2413d"
+```
+
+Run identity/world/gemini diagnostics:
+
+```powershell
+$env:WALA_LIVE='true'; node scripts/diag_identity.js
+$env:WALA_LIVE='true'; node scripts/diag_world.js
+$env:WALA_LIVE='true'; node scripts/diag_gemini.js
+```
+
+Start the CLI in live mode (example):
+
+```powershell
+$env:WALA_LIVE='true'; npm start -- "Who is Billy the Hero?"
+```
+
+Backup via RSS (if `WALA_RSS_URL` is set):
+
+```powershell
+$env:WALA_LIVE='true'; node scripts/backup.js
+```
+
+**Limitations & recommendations**
+
+- Cloudflare may block HTML crawls from this environment (HTTP 403). To gather a complete article corpus, run `scripts/crawl_toc_and_fetch.js` on your local machine or provide a proxy that can access your world pages.
+- The repo contains a paginated-list fallback in the Boromir client, but for reliable free-text search you should build a local full-text index. Suggested approach:
+  - Add `scripts/build_index.js` using `flexsearch` or `lunr` to index article titles, excerpts and content.
+  - Expose `npm run build-index` and wire `src/app.js` to consult the local index when remote search returns no results.
+- Persist index and article metadata and add TTL/invalidation to avoid frequent re-crawls.
+
+**Next actions I can take**
+
+- Add a `scripts/build_index.js` and `npm run build-index` integration (I can implement this next).
+- Wire search fallback to the local index and add a sample of querying the index from `src/app.js`.
+
+If you'd like me to implement the index builder and the CLI command now, tell me and I'll add the script and update `package.json`.
