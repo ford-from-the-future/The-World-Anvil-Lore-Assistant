@@ -46,12 +46,6 @@ The current implementation is intentionally mock-driven so that the surrounding 
 | `npm run dev`  | Runs the CLI in watch mode using Node’s built-in `--watch`. |
 | `npm run lint` | Uses `node --check` on every `.js` file for fast syntax validation. |
 
-## Manual verification
-
-A snapshot of the latest CLI run (with the sample question "What mysteries lie within the royal archives?") is recorded in
-[`docs/manual-test.md`](docs/manual-test.md). Use it as a reference when confirming local behavior or comparing future output
-once the real APIs are wired in.
-
 ## Next steps
 
 - Replace the mock Boromir/Gemini clients with real HTTP requests and API calls.
