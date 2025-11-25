@@ -1,23 +1,18 @@
 {
-  "name": "the-world-anvil-lore-assistant",
+  "name": "world-anvil-lore-assistant-widget",
   "version": "0.1.0",
-  "description": "Bare-bones CLI scaffold for the World Anvil Lore Assistant (WALA)",
+  "description": "A sidebar widget that provides AI-powered Q&A about the current World Anvil article",
   "type": "module",
-  "main": "src/index.js",
+  "main": "src/server/index.js",
   "scripts": {
-    "start": "node src/index.js",
     "serve": "node src/server/index.js",
-    "dev": "node --watch src/index.js",
-    "lint": "node scripts/lint.js",
-    "backup": "node scripts/backup.js",
-    "extract": "node scripts/extract.js",
     "widget:dev": "npm --prefix widget run dev",
     "widget:build": "npm --prefix widget run build"
   },
   "keywords": [
     "world-anvil",
-    "lore",
-    "assistant"
+    "widget",
+    "ai-assistant"
   ],
   "author": "",
   "license": "MIT",
